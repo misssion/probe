@@ -1,0 +1,15 @@
+services:
+  probe:
+    container_name: mqtt-probe
+    image: mind2/probe:dev-master
+    environment:
+      - INTERFACE=any
+      - COLLECTOR=127.0.0.1
+      - PORT=2055
+      - PROTOCOL=mqtt
+      - BENCHMARK=false
+      - FILE_NAME=qos
+      - LOG_LEVEL=DEBUG
+    network_mode: "host"
+    restart: "always"
+    privileged: true

@@ -1,0 +1,133 @@
+name: MIND2 CI/CD
+
+on:
+  push:
+    branches: [ main, experimental ]
+    tags:
+      - "*.*"
+jobs:
+  python_ci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prepare Docker Deployment
+      run: |
+        mkdir -p probe
+        mkdir -p collector
+        cp requirements.txt probe/
+        cp requirements.txt collector/
+        cp -r modules/flows/ probe/
+        cp -r modules/flows/ collector/
+        cp -r modules/mqtt_probe/ probe/
+        cp -r modules/mqtt_collector/ collector/
+        cp -r modules/netflow_tmp/ probe/
+        cp -r modules/netflow_tmp/ collector/
+        cp docker/collector/Dockerfile collector/
+        cp docker/probe/Dockerfile probe/
+        cp probe.py probe/
+        cp collector.py collector/
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install -r requirements.txt
+        python -m pip install flake8 pylint bandit pytest
+        
+    - name: Lint with flake8
+      run: |
+        flake8 --max-line-length=150 *.py
+        flake8 --max-line-length=150 modules/mind2/*.py
+        flake8 --max-line-length=150 modules/flows/*.py
+        flake8 --max-line-length=150 modules/mqtt_collector/*.py
+        flake8 --max-line-length=150 modules/mqtt_probe/*.py
+
+    - name: Check for Vulnerabilities
+      run: |
+        bandit -r *.py
+        bandit -r modules/mind2/*.py
+        bandit -r modules/flows/*.py
+        bandit -r modules/mqtt_collector/*.py
+        bandit -r modules/mqtt_probe/*.py
+
+
+#    - name: Lint with pylint
+#      run: |
+#        pylint -d C0301 *.py
+#        pylint -d C0301 modules/mind2/*.py
+#        pylint -d C0301 modules/flows/*.py
+#        pylint -d C0301 modules/mqtt_collector/*.py
+#        pylint -d C0301 modules/mqtt_probe/*.py
+
+#    - name: Test with pytest
+#      run: |
+#        pytest
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2 
+      with: 
+        platforms: all
+        
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+         
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.CI_REGISTRY_USER  }}
+        password: ${{ secrets.CI_REGISTRY_PASSWORD }}
+
+    - name: Docker Meta Probe
+      id: docker-meta-probe 
+      uses: docker/metadata-action@v3
+      with:
+        images: |
+          mind2/probe
+        tags: |
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+
+    - name: Push MIND2 Probe to Dockerhub
+      uses: docker/build-push-action@v3
+      with:
+        file: ./docker/probe/Dockerfile
+        platforms: 'linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7'
+        push: true
+        tags: ${{ steps.docker-meta-probe.outputs.tags }}
+        labels: ${{ steps.docker-meta-probe.outputs.labels }}
+
+    - name: Docker Meta Collector
+      id: docker-meta-collector 
+      uses: docker/metadata-action@v3
+      with:
+        images: |
+          mind2/collector
+        tags: |
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+
+    - name: Push MIND2 Collector to Dockerhub
+      uses: docker/build-push-action@v3
+      with:
+        file: ./docker/collector/Dockerfile
+        platforms: 'linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7'
+        push: true
+        tags: ${{ steps.docker-meta-collector.outputs.tags }}
+        labels: ${{ steps.docker-meta-collector.outputs.labels }}
