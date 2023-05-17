@@ -1,4 +1,4 @@
-# Probing & Collecting
+# Probe & Collector
 ## MISSION - Process Aware Intrusion Detection in IoT Networks
 
 > Intrusion Detection Systems (IDS) allow for detecting malicious activities in organizational networks and hosts. As the Industrial Internet of Things (Industrial IoT) has gained momentum and attackers become process-aware, it elevates the focus on anomaly-based Network Intrusion Detection Systems (NIDS) in IoT. While previous research has primarily concentrated on fortifying SCADA systems with NIDS, keeping track of the latest advancements in resource-efficient messaging (e.g., MQTT, CoAP, and OPC-UA) is paramount. In our work, we straightforwardly derive IoT processes for NIDS using distributed tracing and process mining. We introduce a pioneering framework called MISSION which effectively captures, consolidates, and models MQTT flows, leading to a heightened process awareness in NIDS. Through our prototypical implementation, we demonstrate exceptional performance and high-quality models. Moreover, our experiments provide empirical evidence for rediscovering pre-defined processes and successfully detecting two distinct MQTT attacks in a simulated IoT network. 
@@ -14,7 +14,7 @@ The probe captures network traffic from a given interface. It transforms the pac
 python probe.py --interface "LAN-Verbindung 2" --collector "localhost" --port 2055 --protocol mqtt --log-level "DEBUG"
 ```
 ### Docker 
-The Dockerfile is located under [/docker/probe](https://git.uni-regensburg.de/mind2/mind2/-/blob/master/docker/collector/Dockerfile).
+The Dockerfile is located under [/docker/probe](https://git.uni-regensburg.de/misssion/probe/-/blob/master/docker/collector/Dockerfile).
 
 ### Docker compose
 ```yaml
@@ -42,7 +42,7 @@ python collector.py --host "localhost" --port 2055 --mongo_url "mongodb://localh
 ```
 
 ### Docker 
-The Dockerfile is located under [/docker/collector](https://git.uni-regensburg.de/mind2/mind2/-/blob/master/docker/probe/Dockerfile).
+The Dockerfile is located under [/docker/collector](https://git.uni-regensburg.de/misssion/probe/-/blob/master/docker/probe/Dockerfile).
 
 ### Docker compose
 ```yaml
@@ -67,10 +67,3 @@ services:
       - "27017:27017"
     restart: always
 ```
-## Analysis
-The analysis module is able to preprocess the flows inside the MongoDB and mines processes on these flows. This module allows the generation of directly follows graphs and the application of the Alpha miner, Heuristic miner, and Inductive miner. Further it encompasses an evaluation flag to quantify the quality of the model regarding it's replay fitness, precision, simplicity, and generalization. 
-```shell
-python --mongodb "mongodb://localhost:27017" --schema "evaluation" --limit 100000 --miner "alpha" --preprocessing "True" --graphs "True" --evaluation "True" 
-```
-
-
