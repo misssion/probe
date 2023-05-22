@@ -7,6 +7,9 @@
 ```shell
 pip install -r requirements.txt
 ```
+## DockerHub
+The docker files are available at [https://hub.docker.com/u/misssion](https://hub.docker.com/u/misssion).
+
 ## Probe
 The probe captures network traffic from a given interface. It transforms the packets to IPFIX and sends it to a collector. In future it should support more protocols.  
 ### Command line
@@ -14,14 +17,14 @@ The probe captures network traffic from a given interface. It transforms the pac
 python probe.py --interface "LAN-Verbindung 2" --collector "localhost" --port 2055 --protocol mqtt --log-level "DEBUG"
 ```
 ### Docker 
-The Dockerfile is located under [/docker/probe](https://git.uni-regensburg.de/misssion/probe/-/blob/master/docker/collector/Dockerfile).
+The Dockerfile is located under [/docker/probe](https://github.com/misssion/probe/blob/main/docker/probe/Dockerfile).
 
 ### Docker compose
 ```yaml
 services:
   probe:
     container_name: mqtt-probe
-    image: mind2/probe
+    image: misssion/probe:latest
     environment:
       - INTERFACE=utun7
       - COLLECTOR=127.0.0.1
@@ -35,21 +38,21 @@ services:
     privileged: true
 ```
 ## Collector
-The collectors aggregates IPFIX flows from different probes and stores them in a MongoDB.
+The collector aggregates IPFIX flows from different probes and stores them in a MongoDB.
 ### Command line
 ```shell
 python collector.py --host "localhost" --port 2055 --mongo_url "mongodb://localhost:27017" --mongo_collection "flows"
 ```
 
 ### Docker 
-The Dockerfile is located under [/docker/collector](https://git.uni-regensburg.de/misssion/probe/-/blob/master/docker/probe/Dockerfile).
+The Dockerfile is located under [/docker/collector](https://github.com/misssion/probe/blob/main/docker/collector/Dockerfile).
 
 ### Docker compose
 ```yaml
 services:
   collector:
     container_name: collector
-    image: mind2/collector:latest
+    image: misssion/collector:latest
     depends_on:
       - mongodb
     environment:
